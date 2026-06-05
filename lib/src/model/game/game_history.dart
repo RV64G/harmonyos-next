@@ -33,23 +33,28 @@ const _nbPerPage = 20;
 final myRecentGamesProvider = FutureProvider.autoDispose<IList<LightExportedGameWithPov>>((
   Ref ref,
 ) async {
-  final online = await ref.watch(onlineStatusProvider.future);
   final authUser = ref.watch(authControllerProvider);
-  if (authUser != null && online) {
-    return ref
-        .read(gameRepositoryProvider)
-        .getUserGames(authUser.user.id, max: kNumberOfRecentGames);
-  } else {
+  if (authUser != null) {
+    // On ohos, local storage (SQLite) is unavailable. Always use network.
+    try {
+      return await ref
+          .read(gameRepositoryProvider)
+          .getUserGames(authUser.user.id, max: kNumberOfRecentGames);
+    } catch (_) {
+      // Network failed, try local storage as fallback
+    }
+  }
+  try {
     final storage = await ref.watch(gameStorageProvider.future);
     return storage
         .page(userId: authUser?.user.id, max: kNumberOfRecentGames)
         .then(
           (value) => value
-              // we can assume that `youAre` is not null either for logged
-              // in users or for anonymous users
               .map((e) => (game: e.game.data, pov: e.game.youAre ?? Side.white))
               .toIList(),
         );
+  } catch (_) {
+    return const IList.empty();
   }
 }, name: 'MyRecentGamesProvider');
 
@@ -121,25 +126,39 @@ class UserGameHistoryNotifier extends AsyncNotifier<UserGameHistoryState> {
     final authUser = ref.watch(authControllerProvider);
     final prefs = ref.watch(gameHistoryPreferencesProvider);
     final online = await ref.watch(onlineStatusProvider.future);
-    final storage = await ref.watch(gameStorageProvider.future);
 
     final id = params.userId ?? authUser?.user.id;
-    final recentGames = id != null && online
-        ? _gameRepository.getUserGames(
-            id,
-            filter: params.filter,
-            withBookmarked: true,
-            withMoves: prefs.displayMode == GameHistoryDisplayMode.detail,
-          )
-        : storage
-              .page(userId: id, filter: params.filter)
-              .then(
-                (value) => value
-                    // we can assume that `youAre` is not null either for logged
-                    // in users or for anonymous users
-                    .map((e) => (game: e.game.data, pov: e.game.youAre ?? Side.white))
-                    .toIList(),
-              );
+    IList<LightExportedGameWithPov> recentGames;
+    if (id != null) {
+      // On ohos, local storage is unavailable, try network first regardless of online status.
+      try {
+        recentGames = await _gameRepository.getUserGames(
+          id,
+          filter: params.filter,
+          withBookmarked: true,
+          withMoves: prefs.displayMode == GameHistoryDisplayMode.detail,
+        );
+      } catch (_) {
+        // Network failed, try local storage
+        final storage = await ref.watch(gameStorageProvider.future);
+        recentGames = await storage
+            .page(userId: id, filter: params.filter)
+            .then(
+              (value) => value
+                  .map((e) => (game: e.game.data, pov: e.game.youAre ?? Side.white))
+                  .toIList(),
+            );
+      }
+    } else {
+      final storage = await ref.watch(gameStorageProvider.future);
+      recentGames = await storage
+          .page(userId: id, filter: params.filter)
+          .then(
+            (value) => value
+                .map((e) => (game: e.game.data, pov: e.game.youAre ?? Side.white))
+                .toIList(),
+          );
+    }
 
     _list.addAll(await recentGames);
 

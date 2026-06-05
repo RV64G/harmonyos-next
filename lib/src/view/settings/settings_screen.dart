@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:app_settings/app_settings.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/experimental/mutation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -45,6 +48,7 @@ class SettingsScreen extends ConsumerWidget {
     final authUser = ref.watch(authControllerProvider);
     final signOutState = ref.watch(signOutMutation);
     final dbSize = ref.watch(getDbSizeInBytesProvider);
+    final isOhos = Platform.operatingSystem == 'ohos';
 
     return PlatformScaffold(
       appBar: PlatformAppBar(title: Text(context.l10n.settingsSettings)),
@@ -56,7 +60,7 @@ class SettingsScreen extends ConsumerWidget {
               children: [
                 ListTile(
                   leading: const Icon(Icons.manage_accounts_outlined),
-                  trailing: Theme.of(context).platform == TargetPlatform.iOS
+                  trailing: defaultTargetPlatform == TargetPlatform.iOS
                       ? const CupertinoListTileChevron()
                       : null,
                   title: Text(context.l10n.mobileAccountPreferences),
@@ -101,7 +105,7 @@ class SettingsScreen extends ConsumerWidget {
               ListTile(
                 leading: const Icon(Icons.palette_outlined),
                 title: Text(context.l10n.mobileTheme),
-                trailing: Theme.of(context).platform == TargetPlatform.iOS
+                trailing: defaultTargetPlatform == TargetPlatform.iOS
                     ? const CupertinoListTileChevron()
                     : null,
                 onTap: () {
@@ -111,7 +115,7 @@ class SettingsScreen extends ConsumerWidget {
               ListTile(
                 leading: const Icon(Icons.app_registration),
                 title: Text(context.l10n.mobileSettingsHomeWidgets),
-                trailing: Theme.of(context).platform == TargetPlatform.iOS
+                trailing: defaultTargetPlatform == TargetPlatform.iOS
                     ? const CupertinoListTileChevron()
                     : null,
                 onTap: () {
@@ -121,7 +125,7 @@ class SettingsScreen extends ConsumerWidget {
               ListTile(
                 leading: const Icon(Symbols.chess_pawn),
                 title: Text(context.l10n.mobileBoardSettings, overflow: TextOverflow.ellipsis),
-                trailing: Theme.of(context).platform == TargetPlatform.iOS
+                trailing: defaultTargetPlatform == TargetPlatform.iOS
                     ? const CupertinoListTileChevron()
                     : null,
                 onTap: () {
@@ -131,7 +135,7 @@ class SettingsScreen extends ConsumerWidget {
               ListTile(
                 leading: const Icon(Icons.memory_outlined),
                 title: const Text('Chess engine'),
-                trailing: Theme.of(context).platform == TargetPlatform.iOS
+                trailing: defaultTargetPlatform == TargetPlatform.iOS
                     ? const CupertinoListTileChevron()
                     : null,
                 onTap: () {
@@ -145,7 +149,7 @@ class SettingsScreen extends ConsumerWidget {
                   generalPrefs.locale ?? Localizations.localeOf(context),
                 ),
                 onTap: () {
-                  if (Theme.of(context).platform == TargetPlatform.android) {
+                  if (defaultTargetPlatform == TargetPlatform.android || isOhos) {
                     showChoicePicker<Locale>(
                       context,
                       choices: AppLocalizations.supportedLocales,
@@ -167,7 +171,11 @@ class SettingsScreen extends ConsumerWidget {
               ListTile(
                 leading: const Icon(Icons.storage_outlined),
                 title: const Text('Local database size'),
-                trailing: dbSize.hasValue ? Text(_getSizeString(dbSize.value)) : null,
+                trailing: dbSize.when(
+                  data: (size) => Text(_getSizeString(size)),
+                  error: (_, __) => const Text('N/A'),
+                  loading: () => const ButtonLoadingIndicator(),
+                ),
               ),
               ListTile(
                 leading: const Icon(Icons.http),
@@ -177,7 +185,7 @@ class SettingsScreen extends ConsumerWidget {
               ListTile(
                 leading: const Icon(Icons.bug_report),
                 title: const Text('App Logs'),
-                trailing: Theme.of(context).platform == TargetPlatform.iOS
+                trailing: defaultTargetPlatform == TargetPlatform.iOS
                     ? const CupertinoListTileChevron()
                     : null,
                 onTap: () {
@@ -188,7 +196,11 @@ class SettingsScreen extends ConsumerWidget {
                 leading: const Icon(Icons.star_outline),
                 title: const Text('Rate this app'),
                 onTap: () async {
-                  final isAndroid = Theme.of(context).platform == TargetPlatform.android;
+                  if (isOhos) {
+                    showSnackBar(context, '敬请期待上架鸿蒙商店');
+                    return;
+                  }
+                  final isAndroid = defaultTargetPlatform == TargetPlatform.android;
                   final launched = await launchUrl(
                     isAndroid
                         ? Uri.parse('market://details?id=org.lichess.mobileV2')
@@ -236,7 +248,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Future<void> _showSignOutConfirmDialog(BuildContext context, WidgetRef ref) {
-    if (Theme.of(context).platform == TargetPlatform.iOS) {
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
       return showCupertinoActionSheet(
         context: context,
         actions: [

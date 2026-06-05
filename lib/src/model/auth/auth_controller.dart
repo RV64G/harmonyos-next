@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/experimental/mutation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -35,30 +36,22 @@ class AuthController extends Notifier<AuthUser?> {
   Future<void> signIn() async {
     final authUser = await ref.read(authRepositoryProvider).signIn();
 
-    await ref.read(authStorageProvider).write(authUser);
-
-    if (!ref.mounted) return;
+    debugPrint('[AUTH] Login successful, user: ${authUser.user.name}');
     state = authUser;
 
-    // register device and reconnect to the current socket once the authUser token is updated
-    await Future.wait([
-      ref.read(notificationServiceProvider).registerDevice(),
-      // force reconnect to the current socket with the new token
-      ref.read(socketPoolProvider).currentClient.connect(),
-    ]);
+    await ref.read(authStorageProvider).write(authUser);
+    debugPrint('[AUTH] Session saved.');
   }
 
   /// Signs out the user.
   Future<void> signOut() async {
-    await Future<void>.delayed(const Duration(milliseconds: 500));
-
-    await ref.read(notificationServiceProvider).unregister();
-    await ref.read(authRepositoryProvider).signOut();
-    await ref.read(authStorageProvider).delete();
-    // force reconnect to the current socket
-    await ref.read(socketPoolProvider).currentClient.connect();
-    if (!ref.mounted) return;
+    // Update state immediately so UI reflects logout.
     state = null;
+    debugPrint('[AUTH] Signed out.');
+
+    // Perform server-side cleanup (best effort, may fail on ohos).
+    try { await ref.read(authRepositoryProvider).signOut(); } catch (_) {}
+    try { await ref.read(authStorageProvider).delete(); } catch (_) {}
   }
 
   /// Checks if the current authUser token is still valid.

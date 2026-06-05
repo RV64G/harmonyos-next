@@ -1,5 +1,22 @@
 # Lichess Mobile
 
+## HarmonyOS NEXT prototype
+
+This fork contains a HarmonyOS NEXT platform prototype based on `lichess-org/mobile`
+`v0.24.1` (`895f1ce`). It is intended for technical review and discussion with
+the Lichess team before decisions are made about repository ownership, branding,
+and distribution.
+
+Relevant documents:
+
+- [GitHub issue draft](./docs/github-issue.md)
+- [HarmonyOS change summary](./docs/harmonyos-change-summary.md)
+- [Distribution and signing notes](./docs/harmonyos-distribution.md)
+- [Public repository checklist](./docs/public-repo-checklist.md)
+- [Native library notes](./docs/native-libraries.md)
+
+---
+
 Second iteration of the [Lichess mobile app](https://lichess.org/mobile).
 
 ## How to contribute

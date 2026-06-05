@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart';
@@ -118,7 +119,16 @@ final _internetCheckUris = [
 ];
 
 /// Checks if the device is online by making a HEAD request to a list of URIs.
+///
+/// On ohos, the emulator network stack is unstable under concurrent HEAD requests
+/// (especially after app resume from background), so we skip the actual check
+/// and assume online status based on the connectivity plugin result.
 Future<bool> isOnline(Client client, {Duration timeout = const Duration(seconds: 10)}) {
+  // On ohos, skip HEAD requests to avoid emulator crash.
+  // The OhosConnectivityPlatform stub already reports wifi-connected.
+  if (const bool.fromEnvironment('dart.library.ohos') || _isLikelyOhos()) {
+    return Future<bool>.value(true);
+  }
   final completer = Completer<bool>();
   try {
     int remaining = _internetCheckUris.length;
@@ -141,6 +151,21 @@ Future<bool> isOnline(Client client, {Duration timeout = const Duration(seconds:
     completer.complete(false);
   }
   return completer.future;
+}
+
+bool _isLikelyOhos() {
+  // bool.fromEnvironment('dart.library.ohos') is NOT set by Flutter-ohos.
+  // Fallback: check if defaultTargetPlatform is not any known platform.
+  try {
+    return defaultTargetPlatform != TargetPlatform.android &&
+           defaultTargetPlatform != TargetPlatform.iOS &&
+           defaultTargetPlatform != TargetPlatform.linux &&
+           defaultTargetPlatform != TargetPlatform.windows &&
+           defaultTargetPlatform != TargetPlatform.macOS &&
+           defaultTargetPlatform != TargetPlatform.fuchsia;
+  } catch (_) {
+    return false;
+  }
 }
 
 extension AsyncValueConnectivity on AsyncValue<ConnectivityStatus> {

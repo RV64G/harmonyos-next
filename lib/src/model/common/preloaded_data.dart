@@ -29,7 +29,12 @@ final preloadedDataProvider = FutureProvider<PreloadedData>((Ref ref) async {
   final authStorage = ref.read(authStorageProvider);
 
   final pInfo = await PackageInfo.fromPlatform();
-  final deviceInfo = await DeviceInfoPlugin().deviceInfo;
+  BaseDeviceInfo deviceInfo;
+  try {
+    deviceInfo = await DeviceInfoPlugin().deviceInfo;
+  } on MissingPluginException {
+    deviceInfo = _OhosDeviceInfo();
+  }
 
   // Generate a socket random identifier and store it for the app lifetime
   String? storedSri;
@@ -40,6 +45,9 @@ final preloadedDataProvider = FutureProvider<PreloadedData>((Ref ref) async {
       await SecureStorage.instance.write(key: kSRIStorageKey, value: sri);
       storedSri = sri;
     }
+  } on UnsupportedError {
+    // Secure storage not available on this platform (e.g. ohos)
+    storedSri = null;
   } on PlatformException catch (_) {
     // Clear all secure storage if an error occurs because it probably means the key has
     // been lost
@@ -48,7 +56,12 @@ final preloadedDataProvider = FutureProvider<PreloadedData>((Ref ref) async {
 
   final sri = storedSri ?? genRandomString(12);
 
-  AuthUser? authUser = await authStorage.read();
+  AuthUser? authUser;
+  try {
+    authUser = await authStorage.read();
+  } catch (_) {
+    authUser = null;
+  }
   final token = authUser?.token;
 
   if (token != null) {
@@ -95,3 +108,8 @@ final preloadedDataProvider = FutureProvider<PreloadedData>((Ref ref) async {
     appSupportDirectory: appSupportDirectory,
   );
 }, name: 'PreloadedDataProvider');
+
+/// Minimal device info stub for platforms without device_info_plus (e.g. ohos).
+class _OhosDeviceInfo extends BaseDeviceInfo {
+  _OhosDeviceInfo() : super(<String, dynamic>{'name': 'HarmonyOS', 'model': 'HarmonyOS Device'});
+}

@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lichess_mobile/src/constants.dart';
 import 'package:lichess_mobile/src/model/settings/board_preferences.dart';
@@ -12,7 +13,7 @@ const kSliderTheme = SliderThemeData(
 );
 
 ThemeData makeAppTheme(BuildContext context, GeneralPrefs generalPrefs, BoardPrefs boardPrefs) {
-  final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
+  final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
   final brightness = generalPrefs.isForcedDarkMode
       ? Brightness.dark
       : switch (generalPrefs.themeMode) {

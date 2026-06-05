@@ -17,48 +17,13 @@ Future<void> showChoicePicker<T>(
 }) {
   switch (Theme.of(context).platform) {
     case TargetPlatform.android:
-      final deviceHeight = MediaQuery.sizeOf(context).height;
-      return showDialog<void>(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: title,
-            clipBehavior: Clip.hardEdge,
-            contentPadding: const EdgeInsets.only(top: 16.0, bottom: 24.0, left: 0, right: 0),
-            scrollable: true,
-            content: Builder(
-              builder: (context) {
-                final List<Widget> choiceWidgets = choices
-                    .map((value) {
-                      return RadioListTile<T>(title: labelBuilder(value), value: value);
-                    })
-                    .toList(growable: false);
-                return RadioGroup(
-                  groupValue: selectedItem,
-                  onChanged: (value) {
-                    if (value != null && onSelectedItemChanged != null) {
-                      onSelectedItemChanged(value);
-                      Navigator.of(context).pop();
-                    }
-                  },
-                  child: choiceWidgets.length >= 10
-                      ? SizedBox(
-                          width: double.maxFinite,
-                          height: deviceHeight * 0.6,
-                          child: ListView(shrinkWrap: true, children: choiceWidgets),
-                        )
-                      : ListBody(children: choiceWidgets),
-                );
-              },
-            ),
-            actions: [
-              TextButton(
-                child: Text(context.l10n.cancel),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
-          );
-        },
+      return _showMaterialChoicePicker(
+        context,
+        title: title,
+        choices: choices,
+        selectedItem: selectedItem,
+        labelBuilder: labelBuilder,
+        onSelectedItemChanged: onSelectedItemChanged,
       );
     case TargetPlatform.iOS:
       if (choices.length <= 10) {
@@ -119,8 +84,68 @@ Future<void> showChoicePicker<T>(
         );
       }
     default:
-      throw Exception('Unexpected platform $Theme.of(context).platform');
+      return _showMaterialChoicePicker(
+        context,
+        title: title,
+        choices: choices,
+        selectedItem: selectedItem,
+        labelBuilder: labelBuilder,
+        onSelectedItemChanged: onSelectedItemChanged,
+      );
   }
+}
+
+Future<void> _showMaterialChoicePicker<T>(
+  BuildContext context, {
+  Widget? title,
+  required List<T> choices,
+  required T selectedItem,
+  required Widget Function(T choice) labelBuilder,
+  void Function(T choice)? onSelectedItemChanged,
+}) {
+  final deviceHeight = MediaQuery.sizeOf(context).height;
+  return showDialog<void>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: title,
+        clipBehavior: Clip.hardEdge,
+        contentPadding: const EdgeInsets.only(top: 16.0, bottom: 24.0, left: 0, right: 0),
+        scrollable: true,
+        content: Builder(
+          builder: (context) {
+            final List<Widget> choiceWidgets = choices
+                .map((value) {
+                  return RadioListTile<T>(title: labelBuilder(value), value: value);
+                })
+                .toList(growable: false);
+            return RadioGroup(
+              groupValue: selectedItem,
+              onChanged: (value) {
+                if (value != null && onSelectedItemChanged != null) {
+                  onSelectedItemChanged(value);
+                  Navigator.of(context).pop();
+                }
+              },
+              child: choiceWidgets.length >= 10
+                  ? SizedBox(
+                      width: double.maxFinite,
+                      height: deviceHeight * 0.6,
+                      child: ListView(shrinkWrap: true, children: choiceWidgets),
+                    )
+                  : ListBody(children: choiceWidgets),
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            child: Text(context.l10n.cancel),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      );
+    },
+  );
 }
 
 Future<Set<T>?> showMultipleChoicesPicker<T extends Enum>(

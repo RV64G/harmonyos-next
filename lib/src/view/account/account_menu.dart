@@ -1,5 +1,6 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/experimental/mutation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,7 +35,7 @@ class AccountMenuScreen extends ConsumerStatefulWidget {
   const AccountMenuScreen({super.key});
 
   static Route<void> buildRoute(BuildContext context) {
-    if (Theme.of(context).platform == TargetPlatform.iOS) {
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
       return buildScreenRoute(screen: const AccountMenuScreen());
     }
 
@@ -93,7 +94,7 @@ class _AccountMenuScreenState extends ConsumerState<AccountMenuScreen> with Widg
     return PlatformScaffold(
       appBar: PlatformAppBar(
         title: Text(context.l10n.mobileAccount),
-        automaticallyImplyLeading: Theme.of(context).platform == TargetPlatform.iOS,
+        automaticallyImplyLeading: defaultTargetPlatform == TargetPlatform.iOS,
         actions: [
           if (Theme.of(context).platform != TargetPlatform.iOS)
             IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.of(context).pop()),
@@ -130,7 +131,7 @@ class _AccountMenuScreenState extends ConsumerState<AccountMenuScreen> with Widg
                                   ),
                           _ => const Icon(Icons.account_circle_outlined, size: 30),
                         },
-                        trailing: Theme.of(context).platform == TargetPlatform.iOS
+                        trailing: defaultTargetPlatform == TargetPlatform.iOS
                             ? const CupertinoListTileChevron()
                             : null,
                         title: AutoSizeText(
@@ -189,7 +190,7 @@ class _AccountMenuScreenState extends ConsumerState<AccountMenuScreen> with Widg
                           count: unreadMessages,
                           child: const Icon(Icons.mail_outline),
                         ),
-                        trailing: Theme.of(context).platform == TargetPlatform.iOS
+                        trailing: defaultTargetPlatform == TargetPlatform.iOS
                             ? const CupertinoListTileChevron()
                             : null,
                         title: Text(context.l10n.inbox),
@@ -200,7 +201,7 @@ class _AccountMenuScreenState extends ConsumerState<AccountMenuScreen> with Widg
                       ),
                     ListTile(
                       leading: const Icon(Icons.settings_outlined),
-                      trailing: Theme.of(context).platform == TargetPlatform.iOS
+                      trailing: defaultTargetPlatform == TargetPlatform.iOS
                           ? const CupertinoListTileChevron()
                           : null,
                       title: Text(context.l10n.settingsSettings),
@@ -238,7 +239,7 @@ class _AccountMenuScreenState extends ConsumerState<AccountMenuScreen> with Widg
                       ),
                     ListTile(
                       leading: const Icon(Icons.info_outline),
-                      trailing: Theme.of(context).platform == TargetPlatform.iOS
+                      trailing: defaultTargetPlatform == TargetPlatform.iOS
                           ? const CupertinoListTileChevron()
                           : null,
                       title: Text(context.l10n.about),
@@ -256,7 +257,7 @@ class _AccountMenuScreenState extends ConsumerState<AccountMenuScreen> with Widg
             top: false,
             child: Padding(
               padding: EdgeInsets.symmetric(
-                vertical: Theme.of(context).platform == TargetPlatform.iOS ? 8.0 : 16.0,
+                vertical: defaultTargetPlatform == TargetPlatform.iOS ? 8.0 : 16.0,
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -296,7 +297,7 @@ class _AccountMenuScreenState extends ConsumerState<AccountMenuScreen> with Widg
   }
 
   void _showSignOutConfirmDialog(BuildContext context, WidgetRef ref) {
-    if (Theme.of(context).platform == TargetPlatform.iOS) {
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
       showCupertinoActionSheet<void>(
         context: context,
         actions: [
@@ -378,13 +379,13 @@ class _AccountMenuButtonState extends ConsumerState<AccountMenuButton> {
           icon: value == null
               ? Icon(
                   Icons.account_circle_outlined,
-                  size: Theme.of(context).platform == TargetPlatform.iOS
+                  size: defaultTargetPlatform == TargetPlatform.iOS
                       ? _cupertinoAnonIconSize
                       : _materialAnonIconSize,
                 )
               : CircleAvatar(
                   radius:
-                      (Theme.of(context).platform == TargetPlatform.iOS
+                      (defaultTargetPlatform == TargetPlatform.iOS
                           ? _cupertinoAnonIconSize / 2
                           : _materialAnonIconSize / 2) +
                       1,
@@ -405,7 +406,7 @@ class _AccountMenuButtonState extends ConsumerState<AccountMenuButton> {
       _ => IconButton(
         icon: Icon(
           Icons.account_circle_outlined,
-          size: Theme.of(context).platform == TargetPlatform.iOS
+          size: defaultTargetPlatform == TargetPlatform.iOS
               ? _cupertinoAnonIconSize
               : _materialAnonIconSize,
         ),
@@ -438,7 +439,7 @@ class AboutScreen extends ConsumerWidget {
               ListTile(
                 leading: const Icon(Icons.info_outlined),
                 title: Text(context.l10n.aboutX('Lichess')),
-                trailing: Theme.of(context).platform == TargetPlatform.iOS
+                trailing: defaultTargetPlatform == TargetPlatform.iOS
                     ? const CupertinoListTileChevron()
                     : null,
                 onTap: () {
@@ -448,7 +449,7 @@ class AboutScreen extends ConsumerWidget {
               ListTile(
                 leading: const Icon(Icons.feedback_outlined),
                 title: Text(context.l10n.mobileFeedbackButton),
-                trailing: Theme.of(context).platform == TargetPlatform.iOS
+                trailing: defaultTargetPlatform == TargetPlatform.iOS
                     ? const CupertinoListTileChevron()
                     : null,
                 onTap: () {
@@ -458,7 +459,7 @@ class AboutScreen extends ConsumerWidget {
               ListTile(
                 leading: const Icon(Icons.article_outlined),
                 title: Text(context.l10n.termsOfService),
-                trailing: Theme.of(context).platform == TargetPlatform.iOS
+                trailing: defaultTargetPlatform == TargetPlatform.iOS
                     ? const CupertinoListTileChevron()
                     : null,
                 onTap: () {
@@ -468,7 +469,7 @@ class AboutScreen extends ConsumerWidget {
               ListTile(
                 leading: const Icon(Icons.privacy_tip_outlined),
                 title: Text(context.l10n.privacyPolicy),
-                trailing: Theme.of(context).platform == TargetPlatform.iOS
+                trailing: defaultTargetPlatform == TargetPlatform.iOS
                     ? const CupertinoListTileChevron()
                     : null,
                 onTap: () {
@@ -483,7 +484,7 @@ class AboutScreen extends ConsumerWidget {
               ListTile(
                 leading: const Icon(Symbols.database),
                 title: Text(context.l10n.database),
-                trailing: Theme.of(context).platform == TargetPlatform.iOS
+                trailing: defaultTargetPlatform == TargetPlatform.iOS
                     ? const CupertinoListTileChevron()
                     : null,
                 onTap: () {
@@ -493,7 +494,7 @@ class AboutScreen extends ConsumerWidget {
               ListTile(
                 leading: const Icon(Icons.code_outlined),
                 title: Text(context.l10n.sourceCode),
-                trailing: Theme.of(context).platform == TargetPlatform.iOS
+                trailing: defaultTargetPlatform == TargetPlatform.iOS
                     ? const CupertinoListTileChevron()
                     : null,
                 onTap: () {
@@ -503,7 +504,7 @@ class AboutScreen extends ConsumerWidget {
               ListTile(
                 leading: const Icon(Icons.bug_report_outlined),
                 title: Text(context.l10n.contribute),
-                trailing: Theme.of(context).platform == TargetPlatform.iOS
+                trailing: defaultTargetPlatform == TargetPlatform.iOS
                     ? const CupertinoListTileChevron()
                     : null,
                 onTap: () {
@@ -513,7 +514,7 @@ class AboutScreen extends ConsumerWidget {
               ListTile(
                 leading: const Icon(Icons.star_border_outlined),
                 title: Text(context.l10n.thankYou),
-                trailing: Theme.of(context).platform == TargetPlatform.iOS
+                trailing: defaultTargetPlatform == TargetPlatform.iOS
                     ? const CupertinoListTileChevron()
                     : null,
                 onTap: () {
@@ -528,7 +529,7 @@ class AboutScreen extends ConsumerWidget {
               ListTile(
                 leading: const Icon(Icons.copyright_outlined),
                 title: const Text('View licences'),
-                trailing: Theme.of(context).platform == TargetPlatform.iOS
+                trailing: defaultTargetPlatform == TargetPlatform.iOS
                     ? const CupertinoListTileChevron()
                     : null,
                 onTap: () {

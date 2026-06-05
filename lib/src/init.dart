@@ -56,11 +56,15 @@ Future<void> initializeApp() async {
     }
   } catch (e, st) {
     _logger.severe('Error during app initialization: $e');
-    LichessBinding.instance.firebaseCrashlytics.recordError(
-      e,
-      st,
-      reason: 'Error during app initialization',
-    );
+    try {
+      LichessBinding.instance.firebaseCrashlytics.recordError(
+        e,
+        st,
+        reason: 'Error during app initialization',
+      );
+    } catch (_) {
+      _logger.warning('Could not report error to crashlytics (Firebase not available)');
+    }
   } finally {
     await prefs.setBool('first_run', false);
   }

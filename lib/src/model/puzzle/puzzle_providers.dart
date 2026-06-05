@@ -6,6 +6,7 @@ import 'package:lichess_mobile/src/model/puzzle/puzzle.dart';
 import 'package:lichess_mobile/src/model/puzzle/puzzle_angle.dart';
 import 'package:lichess_mobile/src/model/puzzle/puzzle_batch_storage.dart';
 import 'package:lichess_mobile/src/model/puzzle/puzzle_opening.dart';
+import 'package:lichess_mobile/src/model/puzzle/puzzle_preferences.dart';
 import 'package:lichess_mobile/src/model/puzzle/puzzle_repository.dart';
 import 'package:lichess_mobile/src/model/puzzle/puzzle_service.dart';
 import 'package:lichess_mobile/src/model/puzzle/puzzle_storage.dart';
@@ -20,14 +21,36 @@ final nextPuzzleProvider = FutureProvider.autoDispose.family<PuzzleContext?, Puz
   PuzzleAngle angle,
 ) async {
   final authUser = ref.watch(authControllerProvider);
-  final puzzleService = await ref.read(puzzleServiceFactoryProvider)(
-    queueLength: kPuzzleLocalQueueLength,
-  );
   // useful for for preview puzzle list in puzzle tab (providers in a list can
   // be invalidated multiple times when the user scrolls the list)
   ref.cacheFor(const Duration(minutes: 1));
 
-  return puzzleService.nextPuzzle(userId: authUser?.user.id, angle: angle);
+  try {
+    final puzzleService = await ref
+        .read(puzzleServiceFactoryProvider)(queueLength: kPuzzleLocalQueueLength)
+        .timeout(const Duration(seconds: 3));
+    return await puzzleService
+        .nextPuzzle(userId: authUser?.user.id, angle: angle)
+        .timeout(const Duration(seconds: 10));
+  } catch (_) {
+    // On platforms without a working SQLite implementation (for example the
+    // current ohos port), local puzzle storage can hang during initialization.
+    // Keep the puzzle tab usable by fetching a single preview puzzle directly.
+    final difficulty = ref.read(puzzlePreferencesProvider).difficulty;
+    final batch = await ref
+        .read(puzzleRepositoryProvider)
+        .selectBatch(nb: 1, angle: angle, difficulty: difficulty)
+        .timeout(const Duration(seconds: 10));
+    final puzzle = batch.puzzles.firstOrNull;
+    if (puzzle == null) return null;
+    return PuzzleContext(
+      puzzle: puzzle,
+      angle: angle,
+      userId: authUser?.user.id,
+      glicko: batch.glicko,
+      rounds: batch.rounds,
+    );
+  }
 }, name: 'NextPuzzleProvider');
 
 /// Fetches the list of puzzles to replay for the given number of [days] and [theme].
@@ -60,9 +83,15 @@ final puzzleProvider = FutureProvider.autoDispose.family<Puzzle, PuzzleId>((
   Ref ref,
   PuzzleId id,
 ) async {
-  final puzzleStorage = await ref.watch(puzzleStorageProvider.future);
-  final puzzle = await puzzleStorage.fetch(puzzleId: id);
-  if (puzzle != null) return puzzle;
+  try {
+    final puzzleStorage = await ref
+        .watch(puzzleStorageProvider.future)
+        .timeout(const Duration(seconds: 3));
+    final puzzle = await puzzleStorage.fetch(puzzleId: id);
+    if (puzzle != null) return puzzle;
+  } catch (_) {
+    // Local storage unavailable, fall through to network
+  }
   return ref.read(puzzleRepositoryProvider).fetch(id);
 }, name: 'PuzzleProvider');
 
@@ -77,8 +106,14 @@ final dailyPuzzleProvider = FutureProvider.autoDispose<Puzzle>((Ref ref) {
 /// Fetches all saved puzzle batches for the current user.
 final savedBatchesProvider = FutureProvider.autoDispose<IList<(PuzzleAngle, int)>>((Ref ref) async {
   final authUser = ref.watch(authControllerProvider);
-  final storage = await ref.watch(puzzleBatchStorageProvider.future);
-  return storage.fetchAll(userId: authUser?.user.id);
+  try {
+    final storage = await ref
+        .watch(puzzleBatchStorageProvider.future)
+        .timeout(const Duration(seconds: 3));
+    return storage.fetchAll(userId: authUser?.user.id);
+  } catch (_) {
+    return const IList.empty();
+  }
 }, name: 'SavedBatchesProvider');
 
 /// Fetches saved puzzle theme batches for the current user.
@@ -86,25 +121,41 @@ final savedThemeBatchesProvider = FutureProvider.autoDispose<IMap<PuzzleThemeKey
   Ref ref,
 ) async {
   final authUser = ref.watch(authControllerProvider);
-  final storage = await ref.watch(puzzleBatchStorageProvider.future);
-  return storage.fetchSavedThemes(userId: authUser?.user.id);
+  try {
+    final storage = await ref
+        .watch(puzzleBatchStorageProvider.future)
+        .timeout(const Duration(seconds: 3));
+    return storage.fetchSavedThemes(userId: authUser?.user.id);
+  } catch (_) {
+    return IMap(const {});
+  }
 }, name: 'SavedThemeBatchesProvider');
 
 /// Fetches saved puzzle opening batches for the current user.
 final savedOpeningBatchesProvider = FutureProvider.autoDispose<IMap<String, int>>((Ref ref) async {
   final authUser = ref.watch(authControllerProvider);
-  final storage = await ref.watch(puzzleBatchStorageProvider.future);
-  return storage.fetchSavedOpenings(userId: authUser?.user.id);
+  try {
+    final storage = await ref
+        .watch(puzzleBatchStorageProvider.future)
+        .timeout(const Duration(seconds: 3));
+    return storage.fetchSavedOpenings(userId: authUser?.user.id);
+  } catch (_) {
+    return IMap(const {});
+  }
 }, name: 'SavedOpeningBatchesProvider');
 
 /// Fetches the puzzle dashboard for the current user for the given number of [days].
 final puzzleDashboardProvider = FutureProvider.autoDispose.family<PuzzleDashboard?, int>((
   Ref ref,
   int days,
-) {
+) async {
   final authUser = ref.watch(authControllerProvider);
   if (authUser == null) return null;
-  return ref.watch(puzzleRepositoryProvider).puzzleDashboard(days);
+  try {
+    return await ref.watch(puzzleRepositoryProvider).puzzleDashboard(days);
+  } catch (_) {
+    return null;
+  }
 }, name: 'PuzzleDashboardProvider');
 
 /// Fetches recent puzzle activity for the current user.

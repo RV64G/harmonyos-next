@@ -35,8 +35,11 @@ import 'package:lichess_mobile/src/widgets/feedback.dart';
 import 'package:linkify/linkify.dart';
 import 'package:logging/logging.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:lichess_mobile/src/utils/ohos_stubs.dart';
 
 final _logger = Logger('AppLinks');
+
+const _isOhos = bool.fromEnvironment('dart.library.ohos');
 
 // Deeplink host/path for the iOS daily-puzzle widget tap.
 // Must stay in sync with Deeplinks.swift in the iOS widget extension.
@@ -54,31 +57,31 @@ class AppLinksService {
 
   final Ref ref;
 
-  final _appLinks = AppLinks();
+  final _appLinks = _isOhos ? null : AppLinks();
   StreamSubscription<Uri>? _linkSubscription;
+  StreamSubscription<Uri>? _ohosSubscription;
 
   Future<void> start() async {
-    // Handle the link that cold-started the app (if any) after the first frame
-    // so the navigator is ready. Push without animation — the user launched the
-    // app via this link so the target screen should just be there.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
-        final initialUri = await _appLinks.getInitialLink();
-        if (initialUri != null) {
-          await _handleUri(initialUri, animated: false);
+        Uri? initialUri;
+        if (_isOhos) {
+          initialUri = await getOhosInitialLink();
+        } else {
+          initialUri = await _appLinks!.getInitialLink();
         }
-      } catch (e, st) {
-        _logger.severe('Error handling initial app link: $e\n$st');
-      }
+        if (initialUri != null) { await _handleUri(initialUri, animated: false); }
+      } catch (e, st) { _logger.severe('Error handling initial app link: $e\n$st'); }
     });
 
-    // Links received while the app is already running get a normal transition.
-    _linkSubscription = _appLinks.uriLinkStream.listen((uri) async {
-      try {
-        await _handleUri(uri, animated: true);
-      } catch (e, st) {
-        _logger.severe('Error handling app link: $e\n$st');
-      }
+    _linkSubscription = (_isOhos ? ohosDeepLinkStream : _appLinks!.uriLinkStream).listen((uri) async {
+      try { await _handleUri(uri, animated: true); } catch (e, st) { _logger.severe('Error: $e\n$st'); }
+    });
+    // Also listen on ohosDeepLinkStream regardless of _isOhos (on non-ohos it's empty).
+    // bool.fromEnvironment('dart.library.ohos') is NOT set by Flutter-ohos runtime,
+    // so _isOhos is always false and _appLinks is always used.
+    _ohosSubscription = ohosDeepLinkStream.listen((uri) async {
+      try { await _handleUri(uri, animated: true); } catch (e, st) { _logger.severe('Error: $e\n$st'); }
     });
   }
 
@@ -116,6 +119,7 @@ class AppLinksService {
 
   void dispose() {
     _linkSubscription?.cancel();
+    _ohosSubscription?.cancel();
   }
 
   /// Resolves an app link [Uri] to one or more corresponding [Route]s.

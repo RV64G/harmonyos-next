@@ -146,7 +146,13 @@ class AppLichessBinding extends LichessBinding {
 
   @override
   Future<void> initializeFirebase() async {
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    try {
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+      _firebaseInitialized = true;
+    } catch (e) {
+      _firebaseInitialized = false;
+      rethrow;
+    }
 
     if (kReleaseMode) {
       FlutterError.onError = firebaseCrashlytics.recordFlutterFatalError;
@@ -161,11 +167,15 @@ class AppLichessBinding extends LichessBinding {
     }
   }
 
-  @override
-  FirebaseMessaging get firebaseMessaging => FirebaseMessaging.instance;
+  bool _firebaseInitialized = false;
 
   @override
-  FirebaseCrashlytics get firebaseCrashlytics => FirebaseCrashlytics.instance;
+  FirebaseMessaging get firebaseMessaging => _firebaseInitialized ? FirebaseMessaging.instance : _stubMessaging;
+  static final _stubMessaging = _FirebaseMessagingStub();
+
+  @override
+  FirebaseCrashlytics get firebaseCrashlytics => _firebaseInitialized ? FirebaseCrashlytics.instance : _stubCrashlytics;
+  static final _stubCrashlytics = _FirebaseCrashlyticsStub();
 
   @override
   void firebaseMessagingOnBackgroundMessage(BackgroundMessageHandler handler) {
@@ -181,4 +191,14 @@ class AppLichessBinding extends LichessBinding {
 
   @override
   Stockfish get stockfish => Stockfish.instance;
+}
+
+class _FirebaseMessagingStub implements FirebaseMessaging {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
+class _FirebaseCrashlyticsStub implements FirebaseCrashlytics {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
 }

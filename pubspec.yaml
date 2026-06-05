@@ -5,9 +5,9 @@ publish_to: "none"
 version: 0.24.1+002401 # See README.md for details about versioning
 
 environment:
-  sdk: ^3.11.5
+  sdk: ">=3.11.0 <4.0.0"
   # this should be updated with every new flutter stable release
-  flutter: 3.44.0
+  # flutter: 3.44.0
 
 dependencies:
   app_links: ^7.0.0
@@ -102,11 +102,20 @@ dev_dependencies:
   wakelock_plus_platform_interface: ^1.5.1
 
 dependency_overrides:
+  multistockfish:
+    path: third_party/multistockfish
   flutter_secure_storage_linux:
     git:
       url: https://github.com/christianfl/flutter_secure_storage.git
       path: flutter_secure_storage_linux
       ref: v10.0.0-beta.4-literal_operator_fix
+  meta: 1.18.2
+
+hooks:
+  user_defines:
+    sqlite3:
+      source: system
+      name: sqlite3
 
 flutter:
   # The following line ensures that the Material Icons font is

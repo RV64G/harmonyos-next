@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,6 +36,7 @@ import 'package:lichess_mobile/src/theme.dart';
 import 'package:lichess_mobile/src/utils/screen.dart';
 import 'package:lichess_mobile/src/view/more/import_pgn_screen.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
+import 'package:lichess_mobile/src/widgets/ohos_in_app_browser.dart';
 
 const String _kIosAppGroupId = 'group.org.lichess.mobileV2.LichessWidgets';
 const List<String> _kIosBlogWidgetKinds = [
@@ -136,6 +139,9 @@ class _AppState extends ConsumerState<Application> {
 
   @override
   void initState() {
+    if (Platform.operatingSystem == 'ohos') {
+      OhosInAppBrowser.instance.register(_navigatorKey);
+    }
     _screenSizeBasedInitialization(ref);
 
     // Start services
@@ -220,10 +226,11 @@ class _AppState extends ConsumerState<Application> {
     final boardPrefs = ref.watch(boardPreferencesProvider);
     final theme = makeAppTheme(context, generalPrefs, boardPrefs);
 
-    final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
+    final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
 
     return MaterialApp(
       navigatorKey: _navigatorKey,
+      debugShowCheckedModeBanner: false,
       localizationsDelegates: const [
         ...AppLocalizations.localizationsDelegates,
         MaterialLocalizationsEo.delegate,

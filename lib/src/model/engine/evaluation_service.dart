@@ -403,6 +403,8 @@ class EvaluationService {
       _protocol.connected((cmd) => _stockfish.stdin = cmd);
     } catch (e, s) {
       _logger.severe('Error initializing engine', e, s);
+      debugPrint('[EvaluationService] Error initializing engine: ${e.runtimeType}: $e');
+      debugPrintStack(label: '[EvaluationService] Engine init stack', stackTrace: s);
       _setEngineState(EngineState.error);
     } finally {
       _initInProgress = false;

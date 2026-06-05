@@ -26,44 +26,7 @@ class SocketPingRatingIcon extends ConsumerWidget {
     return SemanticIconButton(
       semanticsLabel: 'PING: ${ping.averageLag.inMilliseconds}ms',
       icon: LagIndicator(lagRating: ping.rating, size: 24.0),
-      onPressed: () {
-        showPopover(
-          context: context,
-          bodyBuilder: (_) {
-            return Consumer(
-              builder: (_, ref, _) {
-                final p = ref.watch(socketPingProvider(socketUri));
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                  child: Text.rich(
-                    TextSpan(
-                      text: 'PING: ',
-                      children: [
-                        TextSpan(
-                          text: p.averageLag > Duration.zero
-                              ? '${p.averageLag.inMilliseconds}'
-                              : '?',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        TextSpan(
-                          text: ' ms',
-                          style: TextStyle(color: ColorScheme.of(context).onSurface),
-                        ),
-                      ],
-                    ),
-                    style: TextStyle(color: ColorScheme.of(context).onSurface),
-                  ),
-                );
-              },
-            );
-          },
-          backgroundColor:
-              DialogTheme.of(context).backgroundColor ??
-              ColorScheme.of(context).surfaceContainerHigh,
-          transitionDuration: Duration.zero,
-          popoverTransitionBuilder: (_, child) => child,
-        );
-      },
+      onPressed: () => _showSocketPingPopover(context, socketUri),
     );
   }
 }
@@ -104,6 +67,48 @@ class SocketPingRatingListTile extends ConsumerWidget {
       onTap: () {
         launchUrl(Uri.parse('https://lichess.org/lag'));
       },
+    );
+  }
+}
+
+void _showSocketPingPopover(BuildContext context, Uri? socketUri) {
+  showPopover(
+    context: context,
+    bodyBuilder: (_) => _SocketPingPopoverBody(socketUri: socketUri),
+    backgroundColor:
+        DialogTheme.of(context).backgroundColor ?? ColorScheme.of(context).surfaceContainerHigh,
+    transitionDuration: Duration.zero,
+    popoverTransitionBuilder: (_, child) => child,
+  );
+}
+
+class _SocketPingPopoverBody extends ConsumerWidget {
+  const _SocketPingPopoverBody({this.socketUri});
+
+  final Uri? socketUri;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ping = ref.watch(socketPingProvider(socketUri));
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Text.rich(
+        TextSpan(
+          text: 'PING: ',
+          children: [
+            TextSpan(
+              text: ping.averageLag > Duration.zero ? '${ping.averageLag.inMilliseconds}' : '?',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            TextSpan(
+              text: ' ms',
+              style: TextStyle(color: ColorScheme.of(context).onSurface),
+            ),
+          ],
+        ),
+        style: TextStyle(color: ColorScheme.of(context).onSurface),
+      ),
     );
   }
 }

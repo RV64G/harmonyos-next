@@ -41,3 +41,13 @@ doc/api/
 
 # VS Code
 .vscode/
+
+# Local HarmonyOS / Codex test artifacts
+.hvigor/
+flutter_*.log
+sysfreeze-*.log
+tmp_*.png
+tmp_*.jpg
+tmp_*.jpeg
+tmp_*.txt
+tmp_*.json
