@@ -21,7 +21,7 @@ I would like to share the current state, ask for guidance, and understand whethe
 
 ## Summary
 
-I adapted the official Flutter mobile app to HarmonyOS NEXT using the community-maintained Flutter-ohos engine and a small amount of ArkTS native code. The current prototype is based on `lichess-org/mobile` tag `v0.24.1` (`895f1ce`, May 26, 2026).
+I adapted the official Flutter mobile app to HarmonyOS NEXT using Flutter-ohos and a small amount of ArkTS native code. The current prototype is based on `lichess-org/mobile` tag `v0.24.1` (`895f1ce`, May 26, 2026).
 
 The goal was to keep the Dart application as close to upstream as possible. The port currently reuses the existing Lichess app architecture: Riverpod state management, chessground board rendering, dartchess rules, Lichess API integration, WebSocket logic, OAuth PKCE flow, and local Stockfish integration.
 
@@ -49,7 +49,7 @@ Working in the current prototype:
 | SQLite native library | Bundled for x86_64 and arm64 |
 | User profiles, watch, studies, tournaments | Working in tested flows |
 | In-app browser for ordinary links | Working via ArkWeb PlatformView |
-| OAuth login | Implemented; currently opened in the system browser on HarmonyOS because Cloudflare verification did not pass reliably in ArkWeb |
+| OAuth login | Implemented through the system browser on HarmonyOS, returning to the app through the custom scheme callback; Cloudflare verification did not pass reliably during testing |
 | App icon / splash / app name | Adapted for HarmonyOS |
 
 Known limitations:
@@ -58,7 +58,7 @@ Known limitations:
 | --- | --- |
 | Push notifications | Not implemented. Firebase is skipped on HarmonyOS; this would likely need Huawei Push Kit or another strategy. |
 | Release distribution | Not set up. Current builds use local/debug signing. AppGallery release or test distribution would need proper signing, store metadata, and review preparation. |
-| OAuth / Cloudflare | Login works best through the system browser. In-app ArkWeb could load pages, but Cloudflare verification was unreliable during testing. |
+| OAuth / Cloudflare | The login page currently opens in the system browser on HarmonyOS. Cloudflare verification was still unreliable during testing, so this may need guidance from Lichess or additional real-device investigation. |
 | OAuth / HMAC secret | The tested private build used `LICHESS_WS_SECRET` via build-time configuration. The public source does not hard-code the working value; I would like guidance from Lichess on the correct official boundary here. |
 | AppGallery compliance | Not investigated fully. A public listing may require official developer account ownership, brand/copyright proof, privacy policy alignment, and review-specific material. |
 | CI/CD | No HarmonyOS CI is set up. Native libraries are currently built locally. |
@@ -90,7 +90,7 @@ I also evaluated a native ArkTS rewrite. My current view is that a rewrite would
 - Lichess localization and assets would need a new pipeline
 - Keeping parity with upstream mobile releases would become much harder
 
-The Flutter-ohos port keeps the existing Lichess mobile app mostly intact, which seems much more practical for long-term maintenance. That said, I understand if the Lichess team is uncomfortable depending on an unofficial Flutter engine fork.
+The Flutter-ohos port keeps the existing Lichess mobile app mostly intact, which seems much more practical for long-term maintenance. That said, I understand if the Lichess team has concerns about depending on a non-upstream Flutter platform target.
 
 ## Questions for the Lichess team
 
@@ -124,6 +124,8 @@ I do not want to make assumptions about branding, repository ownership, or distr
 
 Code: https://github.com/RV64G/harmonyos-next
 
+Current prototype commit: `db0e6d67d` on the `harmonyos-next` branch.
+
 Suggested attachments:
 
 - short demo video: launch -> login -> online play -> puzzle -> analysis -> local Stockfish
@@ -141,7 +143,7 @@ Thank you for considering this. I am happy to discuss on GitHub, Discord, or whe
 - [x] 写清楚 GPL-3.0 继承关系，保留 `LICENSE` 和 `COPYING.md`。
 - [x] README 顶部写清楚当前是 HarmonyOS NEXT platform experiment/prototype，等待 Lichess 团队指导品牌与分发边界。
 - [x] 公开仓库里避免对品牌、上架主体、官方发布身份做超出 Lichess 团队确认范围的承诺。
-- [ ] 录制演示视频：启动 -> 登录 -> 在线对局 -> 谜题 -> 分析 -> 本地 Stockfish。
+- [x] 录制演示视频：启动 -> 登录 -> 在线对局 -> 谜题 -> 分析 -> 本地 Stockfish。
 - [ ] 截图真实 HarmonyOS NEXT 手机，不只用模拟器。
 - [x] 准备一个修改文件清单，说明哪些是 HarmonyOS 平台文件，哪些是上游兼容修复。
 - [x] 准备回答：为什么不用 ArkTS、如何同步上游、Flutter-ohos 风险、AppGallery 如何分发、Push 如何做。

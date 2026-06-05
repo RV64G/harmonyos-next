@@ -51,3 +51,7 @@ tmp_*.jpg
 tmp_*.jpeg
 tmp_*.txt
 tmp_*.json
+
+# Local demo recordings and vendored package samples
+testVideo.mp4
+third_party/multistockfish/example/
